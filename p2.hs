@@ -13,7 +13,7 @@ shapeScore rpi = rpi + 1
 
 winScore them us = [3,6,0] !! mod3 (us-them)
 
-parseRPS = map (ff (ixOf "ABC") (ixOf "XYZ") . tup2 . map head) . map words . lines
+parseRPS = map (ff (ixOf "ABC") (ixOf "XYZ") . tup2 . map head . words) . lines
 
 p1 = sum . map (\(them, us) -> shapeScore us + winScore them us) . parseRPS
 p2 = sum . map (\(them, si) -> 
