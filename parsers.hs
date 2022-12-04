@@ -30,3 +30,7 @@ ff f1 f2 (a,b) = (f1 a, f2 b)
 -- find index of 'c' in 'l'
 ixOf :: Eq a => [a] -> a -> Int
 ixOf l c = fromJust (elemIndex c l)
+
+-- how many Trues
+countTrue :: [Bool] -> Int
+countTrue = sum . map fromEnum
