@@ -1,12 +1,10 @@
-import Parsers
-import Data.List
-import Control.Arrow
+import Helpers
 
 testInp = readFile "test2.txt"
 inp = readFile "input2.txt"
 
-go fn = inp >>= return . fn
-test fn = testInp >>= return . fn
+go fn = inp <&> fn
+test fn = testInp <&> fn
 
 mod3 = (`mod` 3)
 

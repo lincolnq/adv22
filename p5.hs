@@ -1,17 +1,15 @@
-import Parsers
-import Data.List.Split
+import Helpers
 import qualified Data.Array.IArray as Array
-import Text.Scanf
 import qualified Data.Map as M
-import Control.Arrow
+import Text.Scanf
 import Data.Function
 import Control.Monad
 import Control.Monad.State.Lazy
 
 testInp = readFile "test5.txt"
 inp = readFile "input5.txt"
-go fn = inp >>= return . fn
-test fn = testInp >>= return . fn
+go fn = inp <&> fn
+test fn = testInp <&> fn
 
 type Stax = M.Map Int String
 

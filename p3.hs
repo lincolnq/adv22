@@ -3,8 +3,8 @@ import Data.List.Split
 
 testInp = readFile "test3.txt"
 inp = readFile "input3.txt"
-go fn = inp >>= return . fn
-test fn = testInp >>= return . fn
+go fn = inp <&> fn
+test fn = testInp <&> fn
 
 sacks s = (S.fromList $ take n s, S.fromList $ drop n s)
     where n = length s `div` 2

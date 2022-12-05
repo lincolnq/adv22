@@ -1,4 +1,12 @@
-module Parsers where
+module Helpers (
+    module Helpers, 
+    module Control.Arrow,
+    module Data.Functor,
+    module Data.Function,
+    module Data.Maybe,
+    module Data.List.Split,
+    sort,
+) where
 
 import Text.Read
 import Data.List
@@ -6,6 +14,8 @@ import Data.List.Split
 import Data.Maybe
 import qualified Data.Array.IArray as Array
 import Control.Arrow
+import Data.Functor
+import Data.Function
 
 
 -- 'lines' does the obvious thing from prelude

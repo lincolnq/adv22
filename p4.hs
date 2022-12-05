@@ -1,9 +1,9 @@
-import Parsers
-import Data.List.Split
+import Helpers
+
 testInp = readFile "test4.txt"
 inp = readFile "input4.txt"
-go fn = inp >>= return . fn
-test fn = testInp >>= return . fn
+go fn = inp <&> fn
+test fn = testInp <&> fn
 
 parseRanges = map (tup2 . map (tup2 . nums . splitOn "-") . splitOn ",") . lines
 
