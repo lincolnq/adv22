@@ -30,7 +30,7 @@ modifyStax ix f = modify (M.adjust f ix)
 doMove1 :: Move -> State Stax ()
 doMove1 mv = do
     ~(item:src') <- readStax (_src mv)
-    putStax (_src mv) src'
+    modifyStax (_src mv) tail
     modifyStax (_dst mv) (item:)
 
 -- make a move (repeating the stack motion count times)
@@ -42,7 +42,7 @@ doStackMove :: Move -> State Stax ()
 doStackMove mv = do
     let c = _count mv
     src <- readStax (_src mv)
-    putStax (_src mv) (drop c src)
+    modifyStax (_src mv) (drop c)
     modifyStax (_dst mv) ((take c src)++)
 
 parsed = first (M.fromList . zip [1::Int ..] . map (dropWhile (== ' ') . init) . chunkRows . transpose . Array.amap (!! 1) . readMat 4)
