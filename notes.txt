@@ -1,1 +1,2 @@
 p5: uses matrix reading, as well as state monad, and scanf
+p2: experimenting with Arrows
