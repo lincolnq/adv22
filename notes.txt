@@ -1,2 +1,2 @@
-p5: uses matrix reading, as well as state monad, and scanf
+p5: uses matrix reading, as well as state monad, and scanf. Defined 'exec' which could be useful for other sims.
 p2: experimenting with Arrows
