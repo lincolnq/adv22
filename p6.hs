@@ -14,7 +14,7 @@ main = (,) <$> go part1 <*> go part2
 -- this is the zipWith.
 -- L.Transpose makes a list from the head of each list, then the head of those tails, and so on,
 -- so we have a list of 4- or 14-character strings, on which we can do the allDiff trick.
--- We just need to add countUnique at the end since index 0 is the first 4 chars.
+-- Find first index that is allDiff True, and then just need to add back in countUnique at the end.
 ixMessageStart countUnique =
      (+countUnique) . flip ixOf True . map allDiff . 
      L.transpose . zipWith (fpow tail) [0..(countUnique - 1)] . repeat
