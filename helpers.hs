@@ -16,6 +16,7 @@ import qualified Data.Array.IArray as Array
 import Control.Arrow
 import Data.Functor
 import Data.Function
+import qualified Data.Set as S
 
 
 -- 'lines' does the obvious thing from prelude
@@ -37,8 +38,16 @@ splitMaybes = map (map fromJust) . splitOn [Nothing]
 tup2 = (\[a,b] -> (a,b))
 
 -- apply 2 functions to left and right of 2-tuple
--- (prefer 'first' and 'second')
+-- (deprecated: prefer 'first' and 'second')
 ff f1 f2 = first f1 . second f2
+
+-- repeat f n times to its input
+fpow :: (c -> c) -> Int -> c -> c
+fpow f n = foldl (.) id (replicate n f)
+
+-- True if all elements of the list are different
+allDiff :: Ord a => [a] -> Bool
+allDiff l = length l == (S.size $ S.fromList l)
 
 -- find index of 'c' in 'l'
 ixOf :: Eq a => [a] -> a -> Int
