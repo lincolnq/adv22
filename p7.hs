@@ -1,36 +1,46 @@
+{-# LANGUAGE TemplateHaskell #-}
+
 import Helpers
 import Data.List
 import qualified Data.Map as M
 import qualified Data.Set as S
+import Control.Lens
 
 testInp = readFile "test7.txt"
 inp = readFile "input7.txt"
 go fn = inp <&> fn
 test fn = testInp <&> fn
 
-main = (,) <$> go part1 <*> go part2
-
 data Traverse = Traverse { _cwd :: [String], _files :: M.Map [String] Int, _dirs :: S.Set [String]}
     deriving (Show)
 
+makeLenses ''Traverse
+
 emptyFS = Traverse [] M.empty (S.singleton [])
 
+-- cwd is stored with the directory stack on top, whereas files and dirs are stored
+-- directory stack reversed (so they sort according to the fileystem tree). 
+-- This function is used to convert between, for storage.
+appendPath cwd n = reverse cwd ++ [n]
+
 trav :: Traverse -> String -> Traverse
+
+-- handle cd traversals:
 trav t "$ cd /"
-    = t { _cwd = [] }
-trav t@Traverse{_cwd} "$ cd .."  
-    = t { _cwd = tail _cwd }
-trav t@Traverse{_cwd} s | Just dirname <- stripPrefix "$ cd " s
-    = t { _cwd = dirname : _cwd }
+    = t & cwd .~ []
+trav t "$ cd .."  
+    = t & cwd %~ tail
+trav t s | Just dirname <- stripPrefix "$ cd " s
+    = t & cwd %~ (dirname:)
 
 -- ignore ls lines
 trav t s | "$ ls" `isPrefixOf` s = t
 
-trav t@Traverse{_cwd, _dirs} s | Just dirname <- stripPrefix "dir " s
-    = t { _dirs= S.insert (reverse _cwd ++ [dirname]) _dirs }
-trav t@Traverse{_cwd, _files} s 
-    = t { _files= M.insert (reverse _cwd ++ [filename]) size _files }
-    where (size, filename) = first read . tup2 . words $ s
+-- handle dirs and files
+trav t@Traverse{_cwd} s | Just dirname <- stripPrefix "dir " s
+    = t & dirs %~ (S.insert $ _cwd `appendPath` dirname)
+trav t@Traverse{_cwd} s | (size, filename) <- first read . tup2 . words $ s
+    = t & files %~ (M.insert (_cwd `appendPath` filename) size)
 
 -- to read the filesystem, fold 'traverse' on all the lines,
 -- starting with an empty filesystem/traversal state
@@ -55,3 +65,5 @@ part1 = sum . filter (<=100000) . dirSizes . readFilesystem
 -- purposes of the filter, then filter the dirSizes and take the minimum.
 -- (yes this is a bit much... sorry :/)
 part2 = minimum . uncurry filter <<< (<=) . (+size_offset) . rootsize &&& dirSizes <<< readFilesystem
+
+main = (,) <$> go part1 <*> go part2
