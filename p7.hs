@@ -8,8 +8,7 @@ inp = readFile "input7.txt"
 go fn = inp <&> fn
 test fn = testInp <&> fn
 
---main = (,) <$> go part1 <*> go part2
-main = go part1
+main = (,) <$> go part1 <*> go part2
 
 data Traverse = Traverse { _cwd :: [String], _files :: M.Map [String] Int, _dirs :: S.Set [String]}
     deriving (Show)
@@ -27,26 +26,30 @@ trav t@Traverse{_cwd} s | "$ cd " `isPrefixOf` s
 -- ignore ls lines
 trav t s | "$ ls" `isPrefixOf` s = t
 
--- ignore dirs in ls, they don't contribute to file sizes
 trav t@Traverse{_cwd, _dirs} s | "dir " `isPrefixOf` s 
     = t { _dirs= S.insert (reverse _cwd ++ [drop 4 s]) _dirs }
 trav t@Traverse{_cwd, _files} s = t { _files= M.insert (reverse _cwd ++ [filename]) size _files }
     where (size, filename) = first read . tup2 . words $ s
 
-filesystem = foldl trav emptyFS . lines
+-- to read the filesystem, fold 'traverse' on all the lines,
+-- starting with an empty filesystem/traversal state
+readFilesystem = foldl trav emptyFS . lines
 
-fsquery :: ([String]->Bool) -> Traverse -> [([String], Int)]
-fsquery ff fs = filter (ff . fst) (M.toList . _files $ fs)
+-- Query for the size of a directory, given the traversed filesystem:
+--  Get all the files where given 'dirname' is a prefix; then just sum their sizes.
+dirsize dirname = sum . map snd . filter (isPrefixOf dirname . fst) . M.toList . _files
+rootsize = dirsize []
 
-dirsize :: Traverse -> [String] -> Int
-dirsize fs dirname = sum . map snd . fsquery (dirname `isPrefixOf`) $ fs
+-- Query for the sizes of all directories of the traversed filesystem:
+--  Take the filesystem and get its _dirs; for each one, get its dirsize.
+dirSizes = uncurry map <<< flip dirsize &&& S.toList . _dirs
 
-part1 = sum . filter (<=100000) . (\fs -> map (dirsize fs) (S.toList $ _dirs fs)) . filesystem
+-- Each directory is compared to the size of the root minus 40M (to leave 30M)
+-- to determine if it is big enough to bother deleting.
+size_offset = 30000000 - 70000000::Int
 
-part2 = (\fs -> 
-    let dirSizes = map (\d -> (d, dirsize fs d)) (S.toList $ _dirs fs) in
-    let spaceAtRoot = (M.fromList dirSizes) M.! [] in 
-    let currentFree = 70000000 - spaceAtRoot in 
-    let mustFree = 30000000 - currentFree in 
-    minimum . filter (>=mustFree) . map snd $ dirSizes
-    ) . filesystem
+part1 = sum . filter (<=100000) . dirSizes . readFilesystem
+
+-- We need to get the dirsize of the root (left &&&), create a comparison function for 
+-- purposes of the filter, then filter the dirSizes and take the minimum.
+part2 = minimum . uncurry filter <<< (<=) . (+size_offset) . rootsize &&& dirSizes <<< readFilesystem
