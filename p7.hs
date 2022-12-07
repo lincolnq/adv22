@@ -16,19 +16,20 @@ data Traverse = Traverse { _cwd :: [String], _files :: M.Map [String] Int, _dirs
 emptyFS = Traverse [] M.empty (S.singleton [])
 
 trav :: Traverse -> String -> Traverse
-trav t "$ cd /"  
+trav t "$ cd /"
     = t { _cwd = [] }
 trav t@Traverse{_cwd} "$ cd .."  
     = t { _cwd = tail _cwd }
-trav t@Traverse{_cwd} s | "$ cd " `isPrefixOf` s 
-    = t { _cwd = (drop 5 s) : _cwd }
+trav t@Traverse{_cwd} s | Just dirname <- stripPrefix "$ cd " s
+    = t { _cwd = dirname : _cwd }
 
 -- ignore ls lines
 trav t s | "$ ls" `isPrefixOf` s = t
 
-trav t@Traverse{_cwd, _dirs} s | "dir " `isPrefixOf` s 
-    = t { _dirs= S.insert (reverse _cwd ++ [drop 4 s]) _dirs }
-trav t@Traverse{_cwd, _files} s = t { _files= M.insert (reverse _cwd ++ [filename]) size _files }
+trav t@Traverse{_cwd, _dirs} s | Just dirname <- stripPrefix "dir " s
+    = t { _dirs= S.insert (reverse _cwd ++ [dirname]) _dirs }
+trav t@Traverse{_cwd, _files} s 
+    = t { _files= M.insert (reverse _cwd ++ [filename]) size _files }
     where (size, filename) = first read . tup2 . words $ s
 
 -- to read the filesystem, fold 'traverse' on all the lines,
@@ -52,4 +53,5 @@ part1 = sum . filter (<=100000) . dirSizes . readFilesystem
 
 -- We need to get the dirsize of the root (left &&&), create a comparison function for 
 -- purposes of the filter, then filter the dirSizes and take the minimum.
+-- (yes this is a bit much... sorry :/)
 part2 = minimum . uncurry filter <<< (<=) . (+size_offset) . rootsize &&& dirSizes <<< readFilesystem
