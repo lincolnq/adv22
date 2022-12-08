@@ -1,6 +1,6 @@
 import Helpers
-import qualified Data.Array.IArray as Array
 import qualified Data.Map as M
+import qualified Data.Matrix as Mat
 import Text.Scanf
 import Control.Monad
 import Control.Monad.State.Lazy
@@ -70,8 +70,8 @@ doStackMove mv = do
 parsed = first (
         M.fromList . zip [1::Int ..] 
         . map (dropWhile (== ' ') . init) 
-        . chunkRows . transpose 
-        . Array.amap (!! 1) . readMat 4
+        . Mat.toLists . Mat.tr 
+        . Mat.map (!! 1) . readMat 4
         )
     . second (map parseMove . lines)
     . tup2 . sections

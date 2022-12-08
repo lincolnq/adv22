@@ -9,10 +9,14 @@ module Helpers (
 ) where
 
 import Text.Read
+import Data.Traversable
 import Data.List
 import Data.List.Split
 import Data.Maybe
-import qualified Data.Array.IArray as Array
+import qualified Data.Matrix as Mat
+import qualified Data.Matrix.Generic as MG
+import qualified Data.Vector as V
+
 import Control.Arrow
 import Data.Functor
 import Data.Function
@@ -21,6 +25,8 @@ import qualified Data.Set as S
 
 -- 'lines' does the obvious thing from prelude
 -- most stuff starts with 'lines'
+readInt :: String -> Int
+readInt = read
 
 -- must read numbers
 nums :: [String] -> [Int]
@@ -54,35 +60,47 @@ ixOf :: Eq a => [a] -> a -> Int
 ixOf l c = fromJust (elemIndex c l)
 
 -- how many Trues
-countTrue :: [Bool] -> Int
-countTrue = sum . map fromEnum
+countTrue :: Traversable t => t Bool -> Int
+countTrue = sum . fmap fromEnum
+
+-- Take all elements until one matches. The matching element is returned too.
+takeUntil :: (a -> Bool) -> [a] -> [a]
+takeUntil p = foldr (\x ys -> x : if p x then [] else ys) []
 
 -- like `lines` but for double blank lines
 sections :: String -> [String]
 sections = split (dropDelims . dropBlanks $ onSublist "\n\n")
 
--- convert a String into a 2d array. The 'rows' (1st index) are separated by blank lines.
--- The 'columns' (2nd index) are fixed width, given by the 'c' parameter.
--- We use 0-based indexing. 
-readMat :: Int -> String -> Array.Array (Int, Int) String
-readMat c inp = Array.listArray ((0,0), (h-1,w-1)) $ concat l 
-    where 
-        l :: [[String]] = map (chunksOf c) $ lines inp
-        w = length (head l)
-        h = length l
-
--- convert a 2d array (as read by readMat) into a list of lists.
-chunkRows :: Array.Array (Int, Int) a -> [[a]]
-chunkRows a = map (map snd) $ chunksOf (w+1) $ Array.assocs a where
-    (_,(_,w)) = Array.bounds a
-
--- show matrix by showing all the rows separated by blank lines. (kind of awk)
-showMat :: Show a => Array.Array (Int, Int) a -> String
-showMat = intercalate "\n" . map show . chunkRows
 
 fliptup = uncurry (flip (,))
 
--- transpose matrix 2d
-transpose :: Array.Array (Int, Int) a -> Array.Array (Int, Int) a
-transpose a = Array.ixmap (second fliptup $ Array.bounds a) fliptup a
 
+-- convert a String into a Matrix. The 'rows' (1st index) are separated by blank lines.
+-- The 'columns' (2nd index) are fixed width, given by the 'c' parameter.
+-- We use 0-based indexing. 
+readMat :: Int -> String -> Mat.Matrix String
+readMat c inp = Mat.fromLists . map (chunksOf c) . lines $ inp
+
+-- | Display a matrix as a 'String' using the 'Show' instance of its elements.
+prettyMatrix :: Show a => Mat.Matrix a -> String
+prettyMatrix m = concat
+   [ "┌ ", unwords (replicate (Mat.cols m) blank), " ┐\n"
+   , unlines
+   [ "│ " ++ unwords (fmap (\j -> fill $ strings Mat.! (i,j)) [0..Mat.cols m - 1]) ++ " │" | i <- [0..Mat.rows m - 1] ]
+   , "└ ", unwords (replicate (Mat.cols m) blank), " ┘"
+   ]
+ where
+   strings@(MG.Matrix _ _ _ _ v)  = Mat.map show m
+   widest = V.maximum $ fmap length v
+   fill str = replicate (widest - length str) ' ' ++ str
+   blank = fill ""
+
+
+instance Functor Mat.Matrix where
+    fmap f = Mat.map f
+
+instance Foldable Mat.Matrix where
+    foldMap f (MG.Matrix _ _ _ _ v) = foldMap f v
+
+instance Traversable Mat.Matrix where
+    traverse f = sequenceA . fmap f
