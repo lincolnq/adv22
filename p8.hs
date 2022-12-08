@@ -28,9 +28,7 @@ viewingDistance = snd . mapAccumL (\s it -> (it:s, length . takeUntil (>=it) $ s
 -- Take f (some kind of function on the grid) and m (the grid).
 -- Combine mirror and transpose to run f in each direction; returns the list of results
 -- thus produced.
-doFromAllDirections f m = [(fTransposed . fMirror) f m
-            | fMirror     <- [id, runMirror], 
-              fTransposed <- [id, runTransposed]]
+doFromAllDirections f m = map (\x -> x f m) [id, runMirror, runTransposed, runTransposed . runMirror]
 
 part1 = countTrue . fmap (> 0) . foldl1 (Mat.zipWith (+)) . doFromAllDirections (mapRows isUnblockedRow)  . grid
 part2 = maximum .                foldl1 (Mat.zipWith (*)) . doFromAllDirections (mapRows viewingDistance) . grid
