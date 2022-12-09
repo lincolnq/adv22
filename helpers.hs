@@ -43,6 +43,19 @@ splitMaybes = map (map fromJust) . splitOn [Nothing]
 -- convert a 2-list into a 2-tuple
 tup2 = (\[a,b] -> (a,b))
 
+-- single item to 2-tuple
+dupe :: a -> (a,a)
+dupe x = (x,x)
+
+-- use (^. _3) instead of this, if you're ok with lenses
+fstOf3      (a,_,_) =  a
+sndOf3      (_,b,_) =  b
+thdOf3      (_,_,c) =  c
+
+-- "compose2" -- (.) but where the rhs will be applied to 2 args before composition
+(.:) :: (c -> d) -> (a -> b -> c) -> a -> b -> d
+(f .: g) x y = f (g x y)
+
 -- apply 2 functions to left and right of 2-tuple
 -- (deprecated: prefer 'first' and 'second')
 ff f1 f2 = first f1 . second f2

@@ -1,5 +1,11 @@
+p9: Another simulator. I didn't use the exec helper from p5. It took me a while to simplify moveFollower to the point of being nice, but it is nice in the end. I also started with State monad and moved away from it in the end. Folds are annoying; I ended up thinking through a lot of folds and trying to decide whether to use foldl, foldM, mapAccumL, etc. None of them were perfect for these use cases. I had 2 bugs: first I used the 'old' follower pos in the step function rather than the new one; second was an off by one error making the rope 1 knot too long.
+
 p8: lots of matrix tricks
+
 p7: first where I had to use a lot of non point free functions. Discovered stripPrefix. Used Lenses (unnecessarily).
+
 p6: uses zipWith trick, list Transpose
+
 p5: uses matrix reading, as well as state monad, and scanf. Defined 'exec' which could be useful for other sims.
+
 p2: experimenting with Arrows

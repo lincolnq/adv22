@@ -3,7 +3,9 @@ import qualified Data.Set as S
 import qualified Data.Vector as V
 import Control.Monad.State
 import Control.Monad
+import Control.Lens
 import Debug.Trace
+import Data.List
 
 testInp = readFile "test9.txt"
 inp = readFile "input9.txt"
@@ -12,61 +14,42 @@ test fn = testInp <&> fn
 
 parsed = map (first head . second readInt . tup2 . words) . lines
 
-type S = ((Int, Int), [(Int, Int)])
-
-type Visited = S.Set (Int, Int)
-
+-- Moving the head just means decoding the direction.
 moveHead :: Char -> (Int, Int) -> (Int, Int)
 moveHead 'R' (x,y) = (x+1, y)
 moveHead 'L' (x,y) = (x-1, y)
 moveHead 'U' (x,y) = (x, y-1)
 moveHead 'D' (x,y) = (x, y+1)
 
+-- Moving a follower, given the link it's following:
+moveFollower :: (Int,Int) -> (Int,Int) -> (Int,Int)
+-- if both x and y are within 1, no move.
+moveFollower (x,y) d@(tx,ty) | abs (y-ty) <= 1, abs (x-tx) <= 1 = d
 
+-- Otherwise, we move according to the signum of the axis deltas.
+-- This ends up handling all remaining cases perfectly: if axis aligned 
+-- with our lead then move in the horizontal/vertical direction;
+-- otherwise move diagonally.
+moveFollower (x,y) (tx,ty) = (tx + signum (x-tx), ty + signum (y-ty))
 
-moveFollower :: ((Int,Int),(Int,Int)) -> (Int,Int)
--- no move in y if close
-moveFollower ((x,y),d@(tx,ty)) | x==tx, abs(y-ty) < 2 = d
--- no move in x if close
-moveFollower ((x,y),d@(tx,ty)) | y==ty, abs(x-tx) < 2 = d
+-- a high level simulator step is just a repeated step1
+step s0 (direction, n) = foldl step1 s0 (replicate n direction)
 
--- move in y if further
-moveFollower (h@(x,y),(tx,ty)) | x==tx, y>ty = (tx,ty+1)
-moveFollower (h@(x,y),(tx,ty)) | x==tx, y<ty = (tx,ty-1)
+-- step the head in the given direction, returning new state.
+step1 (h, ks, visited) direction = (h', ks', S.insert lastKnot visited)
+    where
+    -- first move the head
+    h' = moveHead direction h
+    -- then move the knots. note: our accumulator is the same as the 
+    -- result of the mapping function, so 'dupe' works nicely
+    (lastKnot, ks') = mapAccumL (dupe .: moveFollower) h' ks
 
--- move in x if further
-moveFollower (h@(x,y),(tx,ty)) | y==ty, x>tx = (tx+1,ty)
-moveFollower (h@(x,y),(tx,ty)) | y==ty, x<tx = (tx-1,ty)
+-- initial state of the simulation has the head starting at (0,0) 
+-- (or anywhere really), as well as the correct number of knots,
+-- and no visited locations for the last knot yet.
+initialState knots = ((0,0), replicate (knots - 1) (0,0), S.empty)
 
--- close diagonals
-moveFollower ((x,y),d@(tx,ty)) | abs(y-ty)<2, abs(x-tx) < 2 = d
+part1 = length . (^. _3) . foldl step (initialState  2) . parsed
+part2 = length . (^. _3) . foldl step (initialState 10) . parsed
 
--- farther diagonals
-moveFollower (h@(x,y),(tx,ty)) | y>ty, x>tx = (tx+1,ty+1)
-moveFollower (h@(x,y),(tx,ty)) | y<ty, x>tx = (tx+1,ty-1)
-moveFollower (h@(x,y),(tx,ty)) | y>ty, x<tx = (tx-1,ty+1)
-moveFollower (h@(x,y),(tx,ty)) | y<ty, x<tx = (tx-1,ty-1)
-
-moveFollower (_,d) = d
-
-step :: S -> (Char, Int) -> State Visited S
-step s0 (c, 0) = return s0
-step s0 (c, n) = do
-    s1 <- step1 c s0
-    step s1 (c, n-1) 
-
-step1 c (h, ts) = do
-    
-    let nh = moveHead c h
-
-    (_, ts') <- foldM (\(ref, ts') f -> do
-        let f' = moveFollower (ref,f)
-        return $ (f',ts' ++ [f'])
-        ) (nh,[]) ts
---    let f = moveFollower (nh, t)
-    
-    modify $ S.insert (last ts')
-    return $ trace (show (nh, ts')) (nh, ts')
-
-part1 = length . (\p -> execState (foldM_ step ((0,0),[(0,0)]) p) S.empty) . parsed
-part2 = length . (\p -> execState (foldM_ step ((0,0),replicate 9 (0,0)) p) S.empty) . parsed
+main = (,) <$> go part1 <*> go part2
